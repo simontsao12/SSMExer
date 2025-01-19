@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!-- 掃描組件（除控制層） -->
+    <context:component-scan base-package="com.atsimoncc.ssm">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <!-- 引進 jdbc.properties -->
+    <context:property-placeholder location="classpath:jdbc.properties"></context:property-placeholder>
+
+    <!-- 配置資料來源 --> <!-- MyBatis 核心設定檔案就可以不用寫 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"></property>
+        <property name="url" value="${jdbc.url}"></property>
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${jdbc.password}"></property>
+    </bean>
+
+    <!-- 設定事務管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--
+    	開啟事務的註解驅動
+    	將使用註解 @Transactional 標識的方法或類別中所有的方法進行事務管理
+    -->
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+    <!-- 配置 SqlSessionFactoryBean，可以直接在 Spring 的 IOC 中取得 SqlSessionFactory -->
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 設定 MyBatis 的核心設定檔的路徑 -->
+        <!-- 注意: 這邊有引進 MyBatis 的核心設定文件，在核心設定檔配或交給 Spring 管理都行 -->
+        <property name="configLocation" value="classpath:mybatis-config.xml"></property>
+        <!-- 設定資料來源 -->
+        <property name="dataSource" ref="dataSource"></property>
+        <!-- 設定型別別名對應的套件 -->
+        <property name="typeAliasesPackage" value="com.atsimoncc.ssm.pojo"></property>
+        <!-- 設定映射檔的路徑，只有映射檔的包和 mapper 介面的包不一致時需要設定-->
+        <!-- <property name="mapperLocations" value="classpath:mappers/*.xml"></property> -->
+    </bean>
+
+    <!--
+    	配置 mapper 接口的掃描，可以將指定包下所有的 mapper 接口
+    	透過 SqlSession 建立代理實現類別對象，並將這些物件交給 IOC 容器管理
+    --> <!-- 如此一來在 Service 的實現類中舉例 EmployeeServiceImpl 可以直接自動裝配 mapper 介面的實現類物件 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.atsimoncc.ssm.mapper"></property>
+    </bean>
+</beans>
